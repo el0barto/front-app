@@ -1,42 +1,217 @@
+/* App.css mejorado para la aplicación */
+
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Contenedor principal de la app */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Header mejorado */
+.app-header {
   text-align: center;
+  padding: 2rem 0;
+  position: relative;
+  z-index: 2;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.app-title {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+  position: relative;
+  animation: titleGlow 3s ease-in-out infinite alternate;
 }
 
-@keyframes logo-spin {
+.app-subtitle {
+  color: #94a3b8;
+  font-size: 1.2rem;
+  font-weight: 300;
+  margin-bottom: 3rem;
+  opacity: 0;
+  animation: fadeIn 1s ease-out 0.5s forwards;
+}
+
+/* Contenido principal */
+.app-content {
+  flex: 1;
+  display: grid;
+  gap: 2rem;
+  padding: 0 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+/* Grid responsivo para los módulos */
+@media (min-width: 1024px) {
+  .app-content {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+/* Efectos de parallax y movimiento */
+.floating-element {
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.floating-element-1 {
+  top: 10%;
+  left: 5%;
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
+}
+
+.floating-element-2 {
+  top: 60%;
+  right: 10%;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(45deg, rgba(240, 147, 251, 0.1), rgba(245, 87, 108, 0.1));
+  border-radius: 50%;
+  animation: float 8s ease-in-out infinite reverse;
+}
+
+.floating-element-3 {
+  bottom: 20%;
+  left: 20%;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(45deg, rgba(79, 172, 254, 0.1), rgba(0, 242, 254, 0.1));
+  border-radius: 50%;
+  animation: float 10s ease-in-out infinite;
+}
+
+/* Footer mejorado */
+.app-footer {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  position: relative;
+  z-index: 2;
+}
+
+.app-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #475569, transparent);
+}
+
+/* Animaciones personalizadas */
+@keyframes titleGlow {
+  0% {
+    text-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+  }
+  100% {
+    text-shadow: 0 0 20px rgba(240, 147, 251, 0.8), 0 0 30px rgba(118, 75, 162, 0.6);
+  }
+}
+
+@keyframes fadeIn {
   from {
-    transform: rotate(0deg);
+    opacity: 0;
+    transform: translateY(20px);
   }
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
   }
 }
 
-.card {
-  padding: 2em;
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 107, 107, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+  }
 }
 
-.read-the-docs {
-  color: #888;
+/* Utilidades */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Estados de loading global */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+  filter: blur(0.5px);
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .app-content {
+    gap: 1.5rem;
+    padding: 0 0.5rem;
+  }
+  
+  .floating-element {
+    display: none;
+  }
+  
+  .app-title {
+    font-size: 2.5rem;
+  }
+  
+  .app-subtitle {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 1.5rem 0;
+  }
+  
+  .app-title {
+    font-size: 2rem;
+  }
+  
+  .app-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
 }
