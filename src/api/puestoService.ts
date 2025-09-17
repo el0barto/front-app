@@ -1,23 +1,23 @@
-import axios from "axios";
 import type { Puesto } from "../types";
+import api from "./axiosClient";
 
-const API_URL = "http://localhost:8000/api/puestos";
+const ENDPOINT = "/puestos";
 
 export async function getPuestos(): Promise<Puesto[]> {
-  const res = await axios.get(API_URL);
+  const res = await api.get(ENDPOINT);
   return res.data;
 }
 
 export async function createPuesto(data: Omit<Puesto, "id">): Promise<Puesto> {
-  const res = await axios.post(API_URL, data);
+  const res = await api.post(ENDPOINT, data);
   return res.data;
 }
 
 export async function updatePuesto(id: number, data: Partial<Puesto>): Promise<Puesto> {
-  const res = await axios.put(`${API_URL}/${id}`, data);
+  const res = await api.put(`${ENDPOINT}/${id}`, data);
   return res.data;
 }
 
 export async function deletePuesto(id: number): Promise<void> {
-  await axios.delete(`${API_URL}/${id}`);
+  await api.delete(`${ENDPOINT}/${id}`);
 }

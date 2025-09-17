@@ -1,23 +1,23 @@
-import axios from "axios";
 import type { Departamento } from "../types";
+import api from "./axiosClient";
 
-const API_URL = "http://localhost:8000/api/departamentos";
+const ENDPOINT = "/departamentos"; 
 
 export async function getDepartamentos(): Promise<Departamento[]> {
-  const res = await axios.get(API_URL);
+  const res = await api.get(ENDPOINT);
   return res.data;
 }
 
 export async function createDepartamento(data: Omit<Departamento, "id">): Promise<Departamento> {
-  const res = await axios.post(API_URL, data);
+  const res = await api.post(ENDPOINT, data);
   return res.data;
 }
 
 export async function updateDepartamento(id: number, data: Partial<Departamento>): Promise<Departamento> {
-  const res = await axios.put(`${API_URL}/${id}`, data);
+  const res = await api.put(`${ENDPOINT}/${id}`, data);
   return res.data;
 }
 
 export async function deleteDepartamento(id: number): Promise<void> {
-  await axios.delete(`${API_URL}/${id}`);
+  await api.delete(`${ENDPOINT}/${id}`);
 }
