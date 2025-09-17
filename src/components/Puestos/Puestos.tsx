@@ -3,8 +3,10 @@ import {
   getPuestos,
   createPuesto,
   updatePuesto,
-} from "../api/puestoService";
-import type { Puesto } from "../types";
+  deletePuesto,
+} from "../../api/puestoService";
+import type { Puesto } from "../../types";
+import styles from "./Puestos.module.css";
 
 export default function Puestos() {
   const [puestos, setPuestos] = useState<Puesto[]>([]);
@@ -32,31 +34,39 @@ export default function Puestos() {
     fetchData();
   };
 
-  return (
-    <div>
-      <h2>Puestos</h2>
+  const handleDelete = async (id: number) => {
+    await deletePuesto(id);
+    fetchData();
+  };
 
-      <form onSubmit={handleSubmit}>
+  return (
+    <div className={styles.container}>
+      <h2 className={styles.title}>Puestos</h2>
+
+      <form onSubmit={handleSubmit} className={styles.form}>
         <input
-          placeholder="Nombre"
+          placeholder="Nombre del puesto"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
         />
         <button type="submit">{editId ? "Actualizar" : "Crear"}</button>
       </form>
 
-      <ul>
+      <ul className={styles.list}>
         {puestos.map((p) => (
-          <li key={p.id}>
-            {p.nombre}{" "}
-            <button
-              onClick={() => {
-                setEditId(p.id);
-                setNombre(p.nombre);
-              }}
-            >
-              Editar
-            </button>
+          <li key={p.id} className={styles.listItem}>
+            {p.nombre}
+            <div>
+              <button
+                onClick={() => {
+                  setEditId(p.id);
+                  setNombre(p.nombre);
+                }}
+              >
+                Editar
+              </button>
+              <button onClick={() => handleDelete(p.id)}>Eliminar</button>
+            </div>
           </li>
         ))}
       </ul>

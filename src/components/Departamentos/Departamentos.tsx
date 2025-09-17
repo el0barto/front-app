@@ -3,8 +3,9 @@ import {
   getDepartamentos,
   createDepartamento,
   updateDepartamento,
-} from "../api/departamentoService";
-import type { Departamento } from "../types";
+} from "../../api/departamentoService";
+import type { Departamento } from "../../types";
+import styles from "./Departamentos.module.css";
 
 export default function Departamentos() {
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
@@ -37,10 +38,10 @@ export default function Departamentos() {
   };
 
   return (
-    <div>
-      <h2>Departamentos</h2>
+    <div className={styles.container}>
+      <h2 className={styles.title}>Departamentos</h2>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className={styles.form}>
         <input
           placeholder="Nombre"
           value={nombre}
@@ -56,15 +57,13 @@ export default function Departamentos() {
           value={subcuenta}
           onChange={(e) => setSubcuenta(e.target.value)}
         />
-        <button type="submit">
-          {editId ? "Actualizar" : "Crear"}
-        </button>
+        <button type="submit">{editId ? "Actualizar" : "Crear"}</button>
       </form>
 
-      <ul>
+      <ul className={styles.list}>
         {departamentos.map((d) => (
-          <li key={d.id}>
-            {d.nombre} - {d.subcuenta}{" "}
+          <li key={d.id} className={styles.listItem}>
+            {d.nombre} - {d.subcuenta}
             <button
               onClick={() => {
                 setEditId(d.id);

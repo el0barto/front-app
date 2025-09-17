@@ -1,15 +1,12 @@
-import Departamentos from "./components/Departamentos";
-import Puestos from "./components/Puestos";
+import Departamentos from "./components/Departamentos/Departamentos";
+import Puestos from "./components/Puestos/Puestos";
 
-function App() {
+export default function App() {
   return (
     <div>
-      <h1>Gestión de Departamentos y Puestos</h1>
+      <h1>Gestión de Empresa</h1>
       <Departamentos />
-      <hr />
       <Puestos />
     </div>
   );
 }
-
-export default App;
