@@ -3,6 +3,7 @@ import {
   getDepartamentos,
   createDepartamento,
   updateDepartamento,
+  deleteDepartamento, // <--- Asegúrate de tener esta función en tu servicio
 } from "../../api/departamentoService";
 import type { Departamento } from "../../types";
 import styles from "./Departamentos.module.css";
@@ -14,6 +15,7 @@ export default function Departamentos() {
   const [subcuenta, setSubcuenta] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
   const fetchData = async () => {
     try {
@@ -68,6 +70,24 @@ export default function Departamentos() {
     setSubcuenta("");
   };
 
+  const handleDeleteClick = (id: number) => {
+    setDeleteConfirm(id);
+    setTimeout(() => setDeleteConfirm(null), 3000); // auto-cancel
+  };
+
+  const handleDeleteConfirm = async (id: number) => {
+    try {
+      setLoading(true);
+      await deleteDepartamento(id);
+      setDeleteConfirm(null);
+      await fetchData();
+    } catch (error) {
+      console.error("Error al eliminar departamento:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>
@@ -115,27 +135,36 @@ export default function Departamentos() {
       ) : (
         <ul className={styles.list}>
           {departamentos.map((d, index) => (
-            <li 
-              key={d.id} 
-              className={styles.listItem}
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
+            <li key={d.id} className={styles.listItem} style={{ animationDelay: `${index * 0.1}s` }}>
               <div>
-                <div className={styles.itemContent}>
-                  📂 {d.nombre}
-                </div>
+                <div className={styles.itemContent}>📂 {d.nombre}</div>
                 <div className={styles.itemMeta}>
                   {d.descripcion && `${d.descripcion} • `}
                   Subcuenta: {d.subcuenta}
                 </div>
               </div>
-              <button
-                onClick={() => handleEdit(d)}
-                disabled={loading}
-                className={styles.editButton}
-              >
-                ✏️ Editar
-              </button>
+              <div className={styles.buttonGroup}>
+                <button onClick={() => handleEdit(d)} disabled={loading} className={styles.editButton}>
+                  ✏️ Editar
+                </button>
+                {deleteConfirm === d.id ? (
+                  <button
+                    onClick={() => handleDeleteConfirm(d.id)}
+                    disabled={loading}
+                    className={styles.deleteButton}
+                  >
+                    ⚠️ Confirmar
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleDeleteClick(d.id)}
+                    disabled={loading}
+                    className={styles.deleteButton}
+                  >
+                    🗑️ Eliminar
+                  </button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
