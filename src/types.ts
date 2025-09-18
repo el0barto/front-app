@@ -10,6 +10,10 @@ export interface Departamento {
 export interface Puesto {
   id: number;
   nombre: string;
+  departamento?: {
+    id: number;
+    nombre: string;
   created_at?: string;
   updated_at?: string;
+   };
 }

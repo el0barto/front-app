@@ -132,7 +132,13 @@ export default function Puestos() {
               className={styles.listItem}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <div className={styles.itemContent}>🎯 {p.nombre}</div>
+              <div className={styles.itemContent}>
+                🎯 {p.nombre}
+                <br />
+                🏢 <span style={{ fontSize: "0.9rem", opacity: 0.8 }}>
+                  {p.departamento?.nombre ?? "Sin departamento"}
+                </span>
+              </div>
               <div className={styles.buttonGroup}>
                 <button
                   onClick={() => handleEdit(p)}
