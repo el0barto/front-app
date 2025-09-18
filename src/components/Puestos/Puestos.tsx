@@ -15,6 +15,8 @@ export default function Puestos() {
   const [nombre, setNombre] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [departamentoId, setDepartamentoId] = useState<number | undefined>(undefined);
+
 
   // Query para obtener los puestos
   const { data: puestos = [], isLoading } = useQuery<Puesto[]>({
@@ -47,18 +49,22 @@ export default function Puestos() {
 
   // Handlers
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nombre.trim()) return;
+  e.preventDefault();
+  if (!nombre.trim() || !departamentoId) return;
 
-    if (editId) {
-      updateMutation.mutate({ id: editId, data: { nombre } });
-      setEditId(null);
-    } else {
-      createMutation.mutate({ nombre });
-    }
+  const data = { nombre, departamento_id: departamentoId };
 
-    setNombre("");
-  };
+  if (editId) {
+    updateMutation.mutate({ id: editId, data });
+    setEditId(null);
+  } else {
+    createMutation.mutate(data);
+  }
+
+  setNombre("");
+  setDepartamentoId(undefined);
+};
+
 
   const handleEdit = (p: Puesto) => {
     setEditId(p.id);
