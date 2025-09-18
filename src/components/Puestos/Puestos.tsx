@@ -18,10 +18,12 @@ export default function Puestos() {
   const [departamentoId, setDepartamentoId] = useState<number | undefined>(undefined);
 
 
-  // Query para obtener los puestos
+  // --- GET con cacheo por 1 minuto ---
   const { data: puestos = [], isLoading } = useQuery<Puesto[]>({
     queryKey: ["puestos"],
     queryFn: getPuestos,
+    staleTime: 60_000, // 1 minuto
+    refetchOnWindowFocus: false, // evita refetch al volver a la pestaña
   });
 
   // Mutaciones
