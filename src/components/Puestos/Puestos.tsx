@@ -6,7 +6,8 @@ import {
   updatePuesto,
   deletePuesto,
 } from "../../api/puestoService";
-import type { Puesto } from "../../types";
+import { getDepartamentos } from "../../api/departamentoService";
+import type { Puesto, Departamento } from "../../types";
 import styles from "./Puestos.module.css";
 
 export default function Puestos() {
@@ -17,13 +18,19 @@ export default function Puestos() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [departamentoId, setDepartamentoId] = useState<number | undefined>(undefined);
 
-
-  // --- GET con cacheo por 1 minuto ---
+  // ✅ Query para puestos con cacheo
   const { data: puestos = [], isLoading } = useQuery<Puesto[]>({
     queryKey: ["puestos"],
     queryFn: getPuestos,
     staleTime: 60_000, // 1 minuto
-    refetchOnWindowFocus: false, // evita refetch al volver a la pestaña
+    refetchOnWindowFocus: false,
+  });
+
+  // ✅ Query para departamentos (para el select)
+  const { data: departamentos = [] } = useQuery<Departamento[]>({
+    queryKey: ["departamentos"],
+    queryFn: getDepartamentos,
+    staleTime: 60_000,
   });
 
   // Mutaciones
@@ -51,47 +58,42 @@ export default function Puestos() {
 
   // Handlers
   const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!nombre.trim() || !departamentoId) return;
+    e.preventDefault();
+    if (!nombre.trim() || !departamentoId) return;
 
-  const data = { nombre, departamento_id: departamentoId };
+    const data = { nombre, departamento_id: departamentoId };
 
-  if (editId) {
-    updateMutation.mutate({ id: editId, data });
-    setEditId(null);
-  } else {
-    createMutation.mutate(data);
-  }
+    if (editId) {
+      updateMutation.mutate({ id: editId, data });
+      setEditId(null);
+    } else {
+      createMutation.mutate(data);
+    }
 
-  setNombre("");
-  setDepartamentoId(undefined);
-};
-
+    setNombre("");
+    setDepartamentoId(undefined);
+  };
 
   const handleEdit = (p: Puesto) => {
     setEditId(p.id);
     setNombre(p.nombre);
+    setDepartamentoId(p.departamento_id);
   };
 
   const handleCancel = () => {
     setEditId(null);
     setNombre("");
+    setDepartamentoId(undefined);
   };
 
   const handleDeleteClick = (id: number) => {
     setDeleteConfirm(id);
-    // Cancelar si no confirma en 3 segundos
-    setTimeout(() => {
-      setDeleteConfirm(null);
-    }, 3000);
+    setTimeout(() => setDeleteConfirm(null), 3000);
   };
 
   const handleDeleteConfirm = (id: number) => {
-    deleteMutation.mutate(id, {
-      onSettled: () => {
-        setDeleteConfirm(null);
-      },
-    });
+    deleteMutation.mutate(id);
+    setDeleteConfirm(null);
   };
 
   return (
@@ -113,10 +115,32 @@ export default function Puestos() {
           required
           disabled={isLoading}
         />
+        <select
+          value={departamentoId || ""}
+          onChange={(e) => setDepartamentoId(Number(e.target.value) || undefined)}
+          required
+          disabled={isLoading}
+          style={{
+            padding: "0.75rem 1rem",
+            border: "2px solid var(--border-color)",
+            borderRadius: "12px",
+            background: "var(--bg-card)",
+            color: "var(--text-primary)",
+            fontSize: "1rem",
+            minWidth: "200px",
+          }}
+        >
+          <option value="">Selecciona departamento</option>
+          {departamentos.map((dept) => (
+            <option key={dept.id} value={dept.id}>
+              {dept.nombre}
+            </option>
+          ))}
+        </select>
         <div style={{ display: "flex", gap: "0.5rem" }}>
           <button
             type="submit"
-            disabled={!nombre.trim() || createMutation.isPending || updateMutation.isPending}
+            disabled={!nombre.trim() || !departamentoId || createMutation.isPending || updateMutation.isPending}
           >
             {editId ? "✏️ Actualizar" : "➕ Crear"}
           </button>

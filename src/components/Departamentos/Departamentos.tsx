@@ -19,11 +19,18 @@ export default function Departamentos() {
   const [editId, setEditId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
-  // Query: obtener departamentos
-  const { data: departamentos = [], isLoading } = useQuery<Departamento[]>({
+  // ✅ Query con caché de 1 minuto agregado + debugging
+  const { data: departamentos = [], isLoading, error } = useQuery<Departamento[]>({
     queryKey: ["departamentos"],
     queryFn: getDepartamentos,
+    staleTime: 60_000, // 1 minuto de caché
+    refetchOnWindowFocus: false, // evita refetch al volver a la pestaña
   });
+
+  // 🐛 Debug: verificar qué está devolviendo la API
+  console.log("Departamentos data:", departamentos);
+  console.log("Is array?", Array.isArray(departamentos));
+  console.log("Error:", error);
 
   // Mutations
   const createMutation = useMutation({
@@ -135,7 +142,11 @@ export default function Departamentos() {
       </form>
 
       {/* Lista */}
-      {departamentos.length === 0 ? (
+      {!Array.isArray(departamentos) ? (
+        <div className={styles.emptyState}>
+          Error: La respuesta de la API no es válida. Revisa la consola.
+        </div>
+      ) : departamentos.length === 0 ? (
         <div className={styles.emptyState}>
           {isLoading ? "Cargando departamentos..." : "No hay departamentos registrados"}
         </div>
