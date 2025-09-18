@@ -1,59 +1,68 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getDepartamentos,
   createDepartamento,
   updateDepartamento,
-  deleteDepartamento, // <--- Asegúrate de tener esta función en tu servicio
+  deleteDepartamento,
 } from "../../api/departamentoService";
 import type { Departamento } from "../../types";
 import styles from "./Departamentos.module.css";
 
 export default function Departamentos() {
-  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
+  const queryClient = useQueryClient();
+
+  // Form state
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [subcuenta, setSubcuenta] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const data = await getDepartamentos();
-      setDepartamentos(data);
-    } catch (error) {
-      console.error("Error al cargar departamentos:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Query: obtener departamentos
+  const { data: departamentos = [], isLoading } = useQuery<Departamento[]>({
+    queryKey: ["departamentos"],
+    queryFn: getDepartamentos,
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: createDepartamento,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["departamentos"] });
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Departamento> }) =>
+      updateDepartamento(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["departamentos"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteDepartamento,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["departamentos"] });
+    },
+  });
+
+  // Handlers
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim() || !subcuenta.trim()) return;
 
-    try {
-      setLoading(true);
-      if (editId) {
-        await updateDepartamento(editId, { nombre, descripcion, subcuenta });
-        setEditId(null);
-      } else {
-        await createDepartamento({ nombre, descripcion, subcuenta });
-      }
-      setNombre("");
-      setDescripcion("");
-      setSubcuenta("");
-      await fetchData();
-    } catch (error) {
-      console.error("Error al guardar departamento:", error);
-    } finally {
-      setLoading(false);
+    if (editId) {
+      updateMutation.mutate({ id: editId, data: { nombre, descripcion, subcuenta } });
+      setEditId(null);
+    } else {
+      createMutation.mutate({ nombre, descripcion, subcuenta });
     }
+
+    setNombre("");
+    setDescripcion("");
+    setSubcuenta("");
   };
 
   const handleEdit = (d: Departamento) => {
@@ -75,67 +84,69 @@ export default function Departamentos() {
     setTimeout(() => setDeleteConfirm(null), 3000); // auto-cancel
   };
 
-  const handleDeleteConfirm = async (id: number) => {
-    try {
-      setLoading(true);
-      await deleteDepartamento(id);
-      setDeleteConfirm(null);
-      await fetchData();
-    } catch (error) {
-      console.error("Error al eliminar departamento:", error);
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteConfirm = (id: number) => {
+    deleteMutation.mutate(id);
+    setDeleteConfirm(null);
   };
 
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>
         🏢 Departamentos
-        {loading && <span style={{ fontSize: '0.8rem', opacity: 0.7, marginLeft: '1rem' }}>Cargando...</span>}
+        {(isLoading || createMutation.isPending || updateMutation.isPending || deleteMutation.isPending) && (
+          <span style={{ fontSize: "0.8rem", opacity: 0.7, marginLeft: "1rem" }}>
+            Cargando...
+          </span>
+        )}
       </h2>
 
+      {/* Formulario */}
       <form onSubmit={handleSubmit} className={styles.form}>
         <input
           placeholder="Nombre del departamento"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           required
-          disabled={loading}
+          disabled={isLoading}
         />
         <input
           placeholder="Descripción (opcional)"
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
-          disabled={loading}
+          disabled={isLoading}
         />
         <input
           placeholder="Subcuenta"
           value={subcuenta}
           onChange={(e) => setSubcuenta(e.target.value)}
           required
-          disabled={loading}
+          disabled={isLoading}
         />
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button type="submit" disabled={loading || !nombre.trim() || !subcuenta.trim()}>
-            {loading ? '⏳' : editId ? '✏️ Actualizar' : '➕ Crear'}
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button type="submit" disabled={isLoading || !nombre.trim() || !subcuenta.trim()}>
+            {editId ? "✏️ Actualizar" : "➕ Crear"}
           </button>
           {editId && (
-            <button type="button" onClick={handleCancel} disabled={loading}>
+            <button type="button" onClick={handleCancel} disabled={isLoading}>
               ❌ Cancelar
             </button>
           )}
         </div>
       </form>
 
+      {/* Lista */}
       {departamentos.length === 0 ? (
         <div className={styles.emptyState}>
-          {loading ? 'Cargando departamentos...' : 'No hay departamentos registrados'}
+          {isLoading ? "Cargando departamentos..." : "No hay departamentos registrados"}
         </div>
       ) : (
         <ul className={styles.list}>
           {departamentos.map((d, index) => (
-            <li key={d.id} className={styles.listItem} style={{ animationDelay: `${index * 0.1}s` }}>
+            <li
+              key={d.id}
+              className={styles.listItem}
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
               <div>
                 <div className={styles.itemContent}>📂 {d.nombre}</div>
                 <div className={styles.itemMeta}>
@@ -144,13 +155,17 @@ export default function Departamentos() {
                 </div>
               </div>
               <div className={styles.buttonGroup}>
-                <button onClick={() => handleEdit(d)} disabled={loading} className={styles.editButton}>
+                <button
+                  onClick={() => handleEdit(d)}
+                  disabled={isLoading}
+                  className={styles.editButton}
+                >
                   ✏️ Editar
                 </button>
                 {deleteConfirm === d.id ? (
                   <button
                     onClick={() => handleDeleteConfirm(d.id)}
-                    disabled={loading}
+                    disabled={isLoading}
                     className={styles.deleteButton}
                   >
                     ⚠️ Confirmar
@@ -158,7 +173,7 @@ export default function Departamentos() {
                 ) : (
                   <button
                     onClick={() => handleDeleteClick(d.id)}
-                    disabled={loading}
+                    disabled={isLoading}
                     className={styles.deleteButton}
                   >
                     🗑️ Eliminar

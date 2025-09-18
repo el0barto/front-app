@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getPuestos,
   createPuesto,
@@ -9,47 +10,54 @@ import type { Puesto } from "../../types";
 import styles from "./Puestos.module.css";
 
 export default function Puestos() {
-  const [puestos, setPuestos] = useState<Puesto[]>([]);
+  const queryClient = useQueryClient();
+
   const [nombre, setNombre] = useState("");
   const [editId, setEditId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const data = await getPuestos();
-      setPuestos(data);
-    } catch (error) {
-      console.error("Error al cargar puestos:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Query para obtener los puestos
+  const { data: puestos = [], isLoading } = useQuery<Puesto[]>({
+    queryKey: ["puestos"],
+    queryFn: getPuestos,
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Mutaciones
+  const createMutation = useMutation({
+    mutationFn: createPuesto,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["puestos"] });
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Puesto> }) =>
+      updatePuesto(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["puestos"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deletePuesto,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["puestos"] });
+    },
+  });
+
+  // Handlers
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim()) return;
 
-    try {
-      setLoading(true);
-      if (editId) {
-        await updatePuesto(editId, { nombre });
-        setEditId(null);
-      } else {
-        await createPuesto({ nombre });
-      }
-      setNombre("");
-      await fetchData();
-    } catch (error) {
-      console.error("Error al guardar puesto:", error);
-    } finally {
-      setLoading(false);
+    if (editId) {
+      updateMutation.mutate({ id: editId, data: { nombre } });
+      setEditId(null);
+    } else {
+      createMutation.mutate({ nombre });
     }
+
+    setNombre("");
   };
 
   const handleEdit = (p: Puesto) => {
@@ -64,30 +72,29 @@ export default function Puestos() {
 
   const handleDeleteClick = (id: number) => {
     setDeleteConfirm(id);
-    // Auto-cancel after 3 seconds
+    // Cancelar si no confirma en 3 segundos
     setTimeout(() => {
       setDeleteConfirm(null);
     }, 3000);
   };
 
-  const handleDeleteConfirm = async (id: number) => {
-    try {
-      setLoading(true);
-      await deletePuesto(id);
-      setDeleteConfirm(null);
-      await fetchData();
-    } catch (error) {
-      console.error("Error al eliminar puesto:", error);
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteConfirm = (id: number) => {
+    deleteMutation.mutate(id, {
+      onSettled: () => {
+        setDeleteConfirm(null);
+      },
+    });
   };
 
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>
         👥 Puestos de Trabajo
-        {loading && <span style={{ fontSize: '0.8rem', opacity: 0.7, marginLeft: '1rem' }}>Cargando...</span>}
+        {(isLoading || createMutation.isPending || updateMutation.isPending || deleteMutation.isPending) && (
+          <span style={{ fontSize: "0.8rem", opacity: 0.7, marginLeft: "1rem" }}>
+            Cargando...
+          </span>
+        )}
       </h2>
 
       <form onSubmit={handleSubmit} className={styles.form}>
@@ -96,14 +103,17 @@ export default function Puestos() {
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           required
-          disabled={loading}
+          disabled={isLoading}
         />
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button type="submit" disabled={loading || !nombre.trim()}>
-            {loading ? '⏳' : editId ? '✏️ Actualizar' : '➕ Crear'}
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button
+            type="submit"
+            disabled={!nombre.trim() || createMutation.isPending || updateMutation.isPending}
+          >
+            {editId ? "✏️ Actualizar" : "➕ Crear"}
           </button>
           {editId && (
-            <button type="button" onClick={handleCancel} disabled={loading}>
+            <button type="button" onClick={handleCancel}>
               ❌ Cancelar
             </button>
           )}
@@ -112,23 +122,21 @@ export default function Puestos() {
 
       {puestos.length === 0 ? (
         <div className={styles.emptyState}>
-          {loading ? 'Cargando puestos...' : 'No hay puestos registrados'}
+          {isLoading ? "Cargando puestos..." : "No hay puestos registrados"}
         </div>
       ) : (
         <ul className={styles.list}>
           {puestos.map((p, index) => (
-            <li 
-              key={p.id} 
+            <li
+              key={p.id}
               className={styles.listItem}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <div className={styles.itemContent}>
-                🎯 {p.nombre}
-              </div>
+              <div className={styles.itemContent}>🎯 {p.nombre}</div>
               <div className={styles.buttonGroup}>
                 <button
                   onClick={() => handleEdit(p)}
-                  disabled={loading}
+                  disabled={updateMutation.isPending}
                   className={styles.editButton}
                 >
                   ✏️ Editar
@@ -136,11 +144,11 @@ export default function Puestos() {
                 {deleteConfirm === p.id ? (
                   <button
                     onClick={() => handleDeleteConfirm(p.id)}
-                    disabled={loading}
+                    disabled={deleteMutation.isPending}
                     className={styles.deleteButton}
-                    style={{ 
-                      background: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
-                      animation: 'pulse 1s infinite'
+                    style={{
+                      background: "linear-gradient(135deg, #ff6b6b, #ee5a24)",
+                      animation: "pulse 1s infinite",
                     }}
                   >
                     ⚠️ Confirmar
@@ -148,7 +156,7 @@ export default function Puestos() {
                 ) : (
                   <button
                     onClick={() => handleDeleteClick(p.id)}
-                    disabled={loading}
+                    disabled={deleteMutation.isPending}
                     className={styles.deleteButton}
                   >
                     🗑️ Eliminar
